@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+
+{% block title %}Services{% endblock %}
+
+{% block content %}
+<h1>Services</h1>
+
+<table class="table table-bordered table-hover">
+    <thead>
+        <th>Name</th>
+    </thead>
+    <tbody>
+        {% for service in services %}
+        <tr>
+            <td>{{ service.name }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock content %}
