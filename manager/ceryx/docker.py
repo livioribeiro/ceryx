@@ -25,3 +25,8 @@ class DockerApi:
         """Get services from docker daemon"""
         services = self.client.services.list()
         return [self._parse_service(serv) for serv in services if 'Ports' in serv.attrs['Endpoint']]
+
+    def has_service(self, name):
+        """Checks if a service with the given exists"""
+        services = self.client.services.list(filters={'name': name})
+        return len(services) > 0

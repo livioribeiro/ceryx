@@ -3,6 +3,10 @@ import requests
 from ceryx import settings
 
 
+class RouteNotFoundError(Exception):
+    pass
+
+
 class CeryxApi:
     """
     Interacts with the Ceryx Api
@@ -27,11 +31,22 @@ class CeryxApi:
         self.session = session
 
     def routes(self):
-        """
-        Fetches all the routes
-        """
+        """Fetches all the routes"""
         return self.session.get(f'{self.api_url}/routes').json()
     
+    def route(self, name):
+        """Fetches the route with the given name"""
+        res = self.session.get(f'{self.api_url}/routes/{name}')
+        if res.status_code == requests.codes.not_found:
+            raise RouteNotFoundError()
+        
+        return res.json()
+    
+    def has_route(self, name):
+        """Checks if a route exists"""
+        res = self.session.get(f'{self.api_url}/routes/{name}')
+        return res.status_code != requests.codes.not_found
+
     def add_route(self, source, target):
         data = {'source': source, 'target': target}
         
@@ -39,3 +54,6 @@ class CeryxApi:
         res.raise_for_status()
 
         return res.json()
+    
+    def delete_route(self, source):
+        self.session.delete(f'{self.api_url}/routes/{source}')

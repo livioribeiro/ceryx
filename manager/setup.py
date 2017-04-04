@@ -14,6 +14,8 @@ setup(
     install_requires=[
         'docker==2.2.1',
         'Flask==0.12',
+        'Flask-WTF==0.14.2',
+        'WTForms==2.1',
         'requests==2.13.0',
         'gunicorn==19.7.1',
         'whitenoise==3.3.0',

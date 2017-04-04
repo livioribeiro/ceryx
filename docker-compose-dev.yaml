@@ -30,6 +30,21 @@ services:
       - CERYX_API_HOST=0.0.0.0
     volumes:
       - ./api:/opt/ceryx
+  
+  manager:
+    build: ./manager
+    command: python /opt/ceryx/bin/ceryx-manager-server.py
+    ports:
+      - '8080:8080'
+    environment:
+      - CERYX_API_HOST=api
+      - CERYX_API_PORT=5555
+      - CERYX_WEB_HOST=0.0.0.0
+      - CERYX_SECRET_KEY=/var/run/secret-key.txt
+    volumes:
+      - './manager:/opt/ceryx'
+      - './sample-secret-key.txt:/var/run/secret-key.txt'
+      - '/var/run/docker.sock:/var/run/docker.sock'
 
   redis:
     extends:

@@ -12,13 +12,18 @@
         <div class="clearfix"></div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-                <li class="" >
-                    <a href="/routes">
-                        <span class="glyphicon glyphicon-road"></span> Routes
+                <li class="">
+                    <a href="{{ url_for('list_routes') }}">
+                        <span class="glyphicon glyphicon-random"></span> Routes
                     </a>
                 </li>
-                <li class="" >
-                    <a href="/services">
+                <li class="">
+                    <a href="{{ url_for('orphaned_routes') }}">
+                        <span class="glyphicon glyphicon-exclamation-sign"></span> Orphaned Routes
+                    </a>
+                </li>
+                <li class="">
+                    <a href="{{ url_for('list_services') }}">
                         <span class="glyphicon glyphicon-cog"></span> Services
                     </a>
                 </li>

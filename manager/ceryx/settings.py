@@ -18,8 +18,7 @@ CERYX_API_PORT = os.getenv('CERYX_API_PORT', 5555)
 SERVER_NAME = os.getenv('CERYX_SERVER_NAME')
 
 SECRET_KEY = os.getenv('CERYX_SECRET_KEY')
-SECRET_KEY_FILE = os.getenv('CERYX_SECRET_KEY_FILE')
-if SECRET_KEY_FILE:
+if SECRET_KEY:
     with open(SECRET_KEY, 'r') as f:
         SECRET_KEY = f.read()
 
