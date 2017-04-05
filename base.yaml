@@ -7,3 +7,5 @@ services:
     image: sourcelair/ceryx-api:latest
   redis:
     image: redis:3.2.3-alpine
+  postgres:
+    image: postgres:9.6.2-alpine

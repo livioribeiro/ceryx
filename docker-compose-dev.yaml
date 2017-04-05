@@ -41,6 +41,8 @@ services:
       - CERYX_API_PORT=5555
       - CERYX_WEB_HOST=0.0.0.0
       - CERYX_SECRET_KEY=/var/run/secret-key.txt
+      - DATABASE_URL=postgresql://ceryx:ceryx@postgres:5432/ceryx
+      - FLASK_APP=ceryx/manager/__init__.py # for running docker-compose exec manager flask ...
     volumes:
       - './manager:/opt/ceryx'
       - './sample-secret-key.txt:/var/run/secret-key.txt'
@@ -52,6 +54,18 @@ services:
       service: redis
     volumes:
       - redis_data:/data
+  
+  postgres:
+    extends:
+      file: base.yaml
+      service: postgres
+    environment:
+      - POSTGRES_USER=ceryx
+      - POSTGRES_PASSWORD=ceryx
+      - POSTGRES_DB=ceryx
+    volumes:
+      - postgres_data:/data
 
 volumes:
   redis_data:
+  postgres_data:

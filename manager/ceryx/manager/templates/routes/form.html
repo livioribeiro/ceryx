@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 
-{% block title %}Routes{% endblock %}
+{% block title %}New Route{% endblock %}
 
 {% block content %}
 <h1>New Route</h1>
@@ -17,7 +17,7 @@
         {% endif %}
     </div>
 
-    <div class="form-group {{ 'has-error' if 'target' in errors else '' }}">
+    <div class="form-group {{ 'has-error' if form.target-errors else '' }}">
         {{ form.target.label }}
         {{ form.target(class='form-control') }}
         {% if form.target.errors %}
