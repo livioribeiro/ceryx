@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<h1>Routes</h1>
+
+<p>
+    <a href="{{ url_for('new_user') }}" class="btn btn-primary">New User</a>
+</p>
+
+<table class="table table-bordered table-hover">
+    <thead>
+        <th>Name</th>
+        <th>Email</th>
+        <th colspan="2"></th>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+                <a href="{{ url_for('edit_user', user_id=user.id) }}"
+                   class="btn btn-primary btn-sm">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                </a>
+            </td>
+            <td>
+                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post">
+                    <input type="hidden" name="email" value="{{ user.email }}" />
+                    <button type="button" class="btn btn-danger btn-sm"
+                            title="delete user"
+                            onclick="if (confirm('Delete user \'{{ user.name }}\'?')) { submit() }">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock content %}

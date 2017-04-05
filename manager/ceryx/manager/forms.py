@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, PasswordField
-from wtforms.validators import InputRequired, ValidationError
+from wtforms.validators import InputRequired, Optional, EqualTo, ValidationError
 
 from . import ceryx_api, docker_api
 
@@ -21,3 +21,23 @@ class RouteForm(FlaskForm):
 class LoginForm(FlaskForm):
     email = StringField('Email', [InputRequired()])
     password = PasswordField('Password', [InputRequired()])
+
+
+class UserAddForm(FlaskForm):
+    name = StringField('Name', [InputRequired()])
+    email = StringField('Email', [InputRequired()])
+    password = PasswordField('Password', [
+        InputRequired(),
+        EqualTo('confirm', message='Password and Confirmation must match'),
+    ])
+    confirm = PasswordField('Confirm Password', [InputRequired()])
+
+
+class UserEditForm(FlaskForm):
+    name = StringField('Name', [Optional()])
+    email = StringField('Email', [Optional()])
+    password = PasswordField('Password', [
+        Optional(),
+        EqualTo('confirm', message='Password and Confirmation must match'),
+    ])
+    confirm = PasswordField('Confirm Password', [Optional()])

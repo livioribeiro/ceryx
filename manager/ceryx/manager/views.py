@@ -1,10 +1,10 @@
 import json
 
 from flask import abort, flash, redirect, request, render_template, url_for
-from flask_login import login_required, login_user
+from flask_login import login_required, login_user, logout_user
 
 from . import app
-from .forms import RouteForm, LoginForm
+from .forms import RouteForm, LoginForm, UserAddForm, UserEditForm
 from .models import User, Route, Service
 
 
@@ -23,8 +23,15 @@ def login():
             return redirect(url_for('list_routes'))
         else:
             flash('Incorrect email or password')
-    
+
     return render_template('login.html', form=form)
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 
 @app.route('/services', methods=['GET'])
@@ -75,3 +82,50 @@ def delete_route(route):
     Route.delete(route)
 
     return redirect(url_for('list_routes'))
+
+
+@app.route('/users', methods=['GET'])
+@login_required
+def list_users():
+    users = User.query.all()
+    return render_template('users/list.html', users=users)
+
+
+@app.route('/users/new', methods=['GET', 'POST'])
+@login_required
+def new_user():
+    form = UserAddForm()
+    if form.validate_on_submit():
+        user = User(form.name.data, form.email.data)
+        user.set_password(form.password.data)
+        user.save()
+
+        return redirect(url_for('list_users'))
+    
+    return render_template('users/new.html', form=form)
+
+
+@app.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    form = UserEditForm(obj=user)
+
+    if form.validate_on_submit():
+        if form.name.data:
+            user.name = form.name.data
+        if form.email.data:
+            user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        
+        user.save()
+        return redirect(url_for('list_users'))
+    
+    return render_template('users/edit.html', form=form)
+
+
+@app.route('/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    pass
