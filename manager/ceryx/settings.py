@@ -23,7 +23,7 @@ if SECRET_KEY:
         SECRET_KEY = f.read()
 
 DOCKER_HOST = os.getenv('CERYX_DOCKER_HOST', 'unix:///var/run/docker.sock')
-DOKCER_PORT = os.getenv('CERYX_DOCKER_PORT')
+DOCKER_PORT = os.getenv('CERYX_DOCKER_PORT')
 
 SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///:memory:')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
