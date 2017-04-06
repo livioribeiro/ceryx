@@ -67,7 +67,7 @@ def new_route():
         route = Route(form.source.data, form.target.data)
         Route.add(route)
 
-        flash('Route "{} -> {}" added'.format(route.source, route.target))
+        flash('Route "{}" added'.format(route.source))
         return redirect(url_for('list_routes'))
 
     return render_template('routes/new.html', form=form)
@@ -81,6 +81,7 @@ def delete_route(route):
 
     Route.delete(route)
 
+    flash('Route "{}" deleted'.format(route))
     return redirect(url_for('list_routes'))
 
 
@@ -103,6 +104,7 @@ def new_user():
         session.add(user)
         session.commit()
 
+        flash('User "{}" added'.format(user.name))
         return redirect(url_for('list_users'))
 
     return render_template('users/new.html', form=form)
@@ -124,6 +126,7 @@ def edit_user(user_id):
         session.add(user)
         session.commit()
 
+        flash('User "{}" updated'.format(user.name))
         return redirect(url_for('list_users'))
 
     return render_template('users/edit.html', form=form)
@@ -140,4 +143,5 @@ def delete_user(user_id):
     session.delete(user)
     session.commit()
 
+    flash('User "{}" deleted'.format(user.name))
     return redirect(url_for('list_users'))

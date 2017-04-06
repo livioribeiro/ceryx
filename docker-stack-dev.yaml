@@ -1,13 +1,13 @@
-version: '2'
+version: '3.1'
 
 services:
   proxy:
-    extends:
-      file: base.yaml
-      service: proxy
+    image: sourcelair/ceryx-proxy:latest
     build: ./proxy
     ports:
-      - 80
+      - "8000:80"
+    networks:
+      - proxy
     environment:
       - CERYX_REDIS_HOST=redis
       - CERYX_REDIS_PORT=6379
@@ -17,9 +17,7 @@ services:
       - ./proxy/nginx/sites-enabled:/usr/local/openresty/nginx/sites-enabled
 
   api:
-    extends:
-      file: base.yaml
-      service: api
+    image: sourcelair/ceryx-api:latest
     build: ./api
     command: python /opt/ceryx/bin/ceryx-api-server.py
     ports:
@@ -32,9 +30,7 @@ services:
       - ./api:/opt/ceryx
   
   manager:
-    extends:
-      file: base.yaml
-      service: manager
+    image: sourcelair/ceryx-manager:latest
     build: ./manager
     command: python /opt/ceryx/bin/ceryx-manager-server.py
     ports:
@@ -43,26 +39,24 @@ services:
       - CERYX_API_HOST=api
       - CERYX_API_PORT=5555
       - CERYX_WEB_HOST=0.0.0.0
-      - CERYX_SECRET_KEY=/var/run/secret-key.txt
+      - CERYX_SECRET_KEY=/run/secrets/secret-key.txt
       - CERYX_PROXY_NETWORK=proxy
       - DATABASE_URL=postgresql://ceryx:ceryx@postgres:5432/ceryx
       - FLASK_APP=ceryx/manager/__init__.py # for running docker-compose exec manager flask ...
     volumes:
       - './manager:/opt/ceryx'
-      - './sample-secret-key.txt:/var/run/secret-key.txt'
       - '/var/run/docker.sock:/var/run/docker.sock'
+    secrets:
+      - source: manager_secret_key
+        target: secret-key.txt
 
   redis:
-    extends:
-      file: base.yaml
-      service: redis
+    image: redis:3.2.3-alpine
     volumes:
       - redis_data:/data
   
   postgres:
-    extends:
-      file: base.yaml
-      service: postgres
+    image: postgres:9.6.2-alpine
     environment:
       - POSTGRES_USER=ceryx
       - POSTGRES_PASSWORD=ceryx
@@ -73,3 +67,11 @@ services:
 volumes:
   redis_data:
   postgres_data:
+
+networks:
+  proxy:
+    external: true
+
+secrets:
+  manager_secret_key:
+    file: ./sample-secret-key.txt

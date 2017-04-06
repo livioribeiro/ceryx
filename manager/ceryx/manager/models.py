@@ -68,6 +68,7 @@ class Route:
 
     @staticmethod
     def delete(route):
+        print(route)
         if isinstance(route, Route):
             ceryx_api.delete_route(route.source)
         else: # is str

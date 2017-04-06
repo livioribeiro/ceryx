@@ -7,6 +7,26 @@ import requests
 from ceryx import settings
 
 
+def _service_in_proxy_network(service):
+    if 'Networks' not in service.attrs['Spec']:
+        return False
+
+    for net in service.attrs['Spec']['Networks']:
+        if net['Target'] == settings.PROXY_NETWORK:
+            return True
+
+    return False
+
+def _service_has_published_ports(service):
+    if 'Ports' not in service.attrs['Endpoint']:
+        return False
+    return True
+
+def _service_is_published(service):
+    return _service_in_proxy_network(service) \
+        and _service_has_published_ports(service)
+
+
 class DockerService:
     """Interacts with the Docker Api"""
 
@@ -18,13 +38,14 @@ class DockerService:
     def __init__(self, base_url):
         self.client = docker.DockerClient(base_url=base_url)
 
-    def services(self):
+    def services(self, filters={}):
         """Get services from docker daemon"""
-        return self.client.services.list()
+        services = self.client.services.list(filters=filters)
+        return [s for s in services if _service_in_proxy_network(s)]
 
     def has_service(self, name):
         """Checks if a service with the given exists"""
-        services = self.client.services.list(filters={'name': name})
+        services = self.services(filters={'name': name})
         return len(services) > 0
 
 
@@ -75,4 +96,4 @@ class CeryxApiService:
         return res.json()
     
     def delete_route(self, source):
-        self.session.delete(self.api_url + '/routes/{source}')
+        self.session.delete(self.api_url + '/routes/' + source)

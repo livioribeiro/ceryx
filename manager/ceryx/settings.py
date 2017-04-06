@@ -25,5 +25,7 @@ if SECRET_KEY:
 DOCKER_HOST = os.getenv('CERYX_DOCKER_HOST', 'unix:///var/run/docker.sock')
 DOCKER_PORT = os.getenv('CERYX_DOCKER_PORT')
 
+PROXY_NETWORK = os.getenv('CERYX_PROXY_NETWORK', 'proxy')
+
 SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///:memory:')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
