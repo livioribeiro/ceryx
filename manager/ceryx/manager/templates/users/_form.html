@@ -1,0 +1,39 @@
+<form method="post">
+    {{ form.csrf_token }}
+
+    <div class="form-group {{ 'has-error' if form.name.errors else '' }}">
+        {{ form.name.label }}
+        {{ form.name(class='form-control') }}
+        {% for error in form.name.errors %}
+        <span class="help-block">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <div class="form-group {{ 'has-error' if form.email.errors else '' }}">
+        {{ form.email.label }}
+        {{ form.email(class='form-control') }}
+        {% for error in form.email.errors %}
+        <span class="help-block">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <div class="form-group {{ 'has-error' if form.password.errors else '' }}">
+        {{ form.password.label }}
+        {{ form.password(class='form-control') }}
+        {% for error in form.password.errors %}
+        <span class="help-block">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <div class="form-group {{ 'has-error' if form.confirm.errors else '' }}">
+        {{ form.confirm.label }}
+        {{ form.confirm(class='form-control') }}
+        {% for error in form.confirm.errors %}
+        <span class="help-block">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>

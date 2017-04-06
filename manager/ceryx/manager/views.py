@@ -3,7 +3,7 @@ import json
 from flask import abort, flash, redirect, request, render_template, url_for
 from flask_login import login_required, login_user, logout_user
 
-from . import app
+from . import app, db
 from .forms import RouteForm, LoginForm, UserAddForm, UserEditForm
 from .models import User, Route, Service
 
@@ -70,7 +70,7 @@ def new_route():
         flash('Route "{} -> {}" added'.format(route.source, route.target))
         return redirect(url_for('list_routes'))
 
-    return render_template('routes/form.html', form=form)
+    return render_template('routes/new.html', form=form)
 
 
 @app.route('/routes/<path:route>/delete', methods=['POST'])
@@ -78,7 +78,7 @@ def new_route():
 def delete_route(route):
     if route != request.form['route']:
         abort(400)
-    
+
     Route.delete(route)
 
     return redirect(url_for('list_routes'))
@@ -98,10 +98,13 @@ def new_user():
     if form.validate_on_submit():
         user = User(form.name.data, form.email.data)
         user.set_password(form.password.data)
-        user.save()
+
+        session = db.session
+        session.add(user)
+        session.commit()
 
         return redirect(url_for('list_users'))
-    
+
     return render_template('users/new.html', form=form)
 
 
@@ -112,20 +115,29 @@ def edit_user(user_id):
     form = UserEditForm(obj=user)
 
     if form.validate_on_submit():
-        if form.name.data:
-            user.name = form.name.data
-        if form.email.data:
-            user.email = form.email.data
+        user.name = form.name.data
+        user.email = form.email.data
         if form.password.data:
             user.set_password(form.password.data)
-        
-        user.save()
+
+        session = db.session
+        session.add(user)
+        session.commit()
+
         return redirect(url_for('list_users'))
-    
+
     return render_template('users/edit.html', form=form)
 
 
 @app.route('/users/<int:user_id>/delete', methods=['POST'])
 @login_required
 def delete_user(user_id):
-    pass
+    user = User.query.get_or_404(user_id)
+    if user.email != request.form['email']:
+        return abort(400)
+
+    session = db.session
+    session.delete(user)
+    session.commit()
+
+    return redirect(url_for('list_users'))
