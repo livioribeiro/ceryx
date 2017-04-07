@@ -33,6 +33,10 @@ services:
     image: sourcelair/ceryx-manager:latest
     build: ./manager
     command: python /opt/ceryx/bin/ceryx-manager-server.py
+    deploy:
+      placement:
+        constraints:
+          - node.role==manager
     ports:
       - '8080:8080'
     environment:
