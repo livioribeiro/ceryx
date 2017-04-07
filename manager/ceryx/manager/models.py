@@ -68,11 +68,8 @@ class Route:
 
     @staticmethod
     def delete(route):
-        print(route)
-        if isinstance(route, Route):
-            ceryx_api.delete_route(route.source)
-        else: # is str
-            ceryx_api.delete_route(route)
+        route = route.source if isinstance(route, Route) else route
+        ceryx_api.delete_route(route)
 
     class NotFound(Exception):
         pass
@@ -92,11 +89,11 @@ class Service:
         self.name = name
         self.image = image
         self.ports = ports
-    
+
     @property
     def target_port(self):
         return self.ports[0]['TargetPort']
-    
+
     @property
     def published_port(self):
         return self.ports[0]['PublishedPort']

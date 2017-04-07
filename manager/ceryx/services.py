@@ -7,41 +7,42 @@ import requests
 from ceryx import settings
 
 
-def _service_in_proxy_network(service):
-    if 'Networks' not in service.attrs['Spec']:
-        return False
-
-    for net in service.attrs['Spec']['Networks']:
-        if net['Target'] == settings.PROXY_NETWORK:
-            return True
-
-    return False
-
-def _service_has_published_ports(service):
-    if 'Ports' not in service.attrs['Endpoint']:
-        return False
-    return True
-
-def _service_is_published(service):
-    return _service_in_proxy_network(service) \
-        and _service_has_published_ports(service)
-
-
 class DockerService:
     """Interacts with the Docker Api"""
 
     @staticmethod
     def from_config():
         """Create an instance of ``DockerService`` from settings"""
-        return DockerService(settings.DOCKER_HOST)
+        return DockerService(settings.DOCKER_HOST, settings.PROXY_NETWORK)
 
-    def __init__(self, base_url):
+    def __init__(self, base_url, proxy_network):
         self.client = docker.DockerClient(base_url=base_url)
+        self.proxy_network = proxy_network
 
-    def services(self, filters={}):
+    def _is_in_proxy_network(self, service):
+        if 'Networks' not in service.attrs['Spec']:
+            return False
+
+        for net in service.attrs['Spec']['Networks']:
+            if net['Target'] == self.proxy_network:
+                return True
+
+        return False
+
+    def _has_published_ports(self, service):
+        if 'Ports' not in service.attrs['Endpoint']:
+            return False
+        return True
+
+    def _is_published(self, service):
+        return self._is_in_proxy_network(service) \
+            and self._has_published_ports(service)
+
+    def services(self, filters=None):
         """Get services from docker daemon"""
+        filters = filters or dict()
         services = self.client.services.list(filters=filters)
-        return [s for s in services if _service_in_proxy_network(s)]
+        return [s for s in services if self._is_published(s)]
 
     def has_service(self, name):
         """Checks if a service with the given exists"""
@@ -55,8 +56,7 @@ class CeryxApiService:
     @staticmethod
     def from_config():
         """
-        Creates an instance of ``CeryxService`` from settings
-        settings.
+        Creates an instance of ``CeryxService`` from settings settings.
         """
         return CeryxApiService(settings.CERYX_API_HOST, settings.CERYX_API_PORT)
 
@@ -73,27 +73,38 @@ class CeryxApiService:
     def routes(self):
         """Fetches all the routes"""
         return self.session.get(self.api_url + '/routes').json()
-    
+
     def route(self, name):
         """Fetches the route with the given name"""
-        res = self.session.get(self.api_url + '/routes/{name}')
+        res = self.session.get(self.api_url + '/routes/' + name)
         if res.status_code == requests.codes.not_found:
             return None
-        
+
         return res.json()
-    
+
     def has_route(self, name):
         """Checks if a route exists"""
-        res = self.session.get(self.api_url + '/routes/{name}')
+        res = self.session.get(self.api_url + '/routes/' + name)
         return res.status_code == requests.codes.ok
 
     def add_route(self, source, target):
-        data = {'source': source, 'target': target}
-        
-        res = self.session.post(self.api_url + '/routes', json=data)
+        """Adds a new route"""
+        data = {'target': target}
+
+        res = self.session.put(self.api_url + '/routes/' + source, json=data)
         res.raise_for_status()
 
         return res.json()
-    
+
     def delete_route(self, source):
-        self.session.delete(self.api_url + '/routes/' + source)
+        """Deletes a route"""
+        res = self.session.delete(self.api_url + '/routes/' + source)
+        
+        status = res.status_code
+        if status == requests.codes.ok:
+            return True
+
+        if status == requests.codes.not_found:
+            return None
+        
+        return False
