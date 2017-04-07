@@ -4,9 +4,12 @@ services:
   proxy:
     image: sourcelair/ceryx-proxy:latest
     build: ./proxy
+    depends_on:
+      - redis
     ports:
       - "8000:80"
     networks:
+      - default
       - proxy
     environment:
       - CERYX_REDIS_HOST=redis
@@ -20,6 +23,8 @@ services:
     image: sourcelair/ceryx-api:latest
     build: ./api
     command: python /opt/ceryx/bin/ceryx-api-server.py
+    depends_on:
+      - redis
     ports:
       - 5555
     environment:
@@ -33,6 +38,9 @@ services:
     image: sourcelair/ceryx-manager:latest
     build: ./manager
     command: python /opt/ceryx/bin/ceryx-manager-server.py
+    depends_on:
+      - api
+      - postgres
     deploy:
       placement:
         constraints:

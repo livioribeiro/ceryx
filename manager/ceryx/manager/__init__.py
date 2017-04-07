@@ -7,7 +7,8 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from whitenoise import WhiteNoise
 
-from ceryx.services import CeryxApiService, DockerService
+from ceryx.ceryx_service import CeryxApiService
+from ceryx.docker_service import DockerService
 
 app = Flask(__name__)
 app.config.from_object('ceryx.settings')

@@ -81,28 +81,14 @@ class Service:
         name = service.name
         image = service.attrs['Spec']['TaskTemplate']['ContainerSpec']['Image']
         image = image.split('@')[0]
-        ports = service.attrs['Endpoint']['Ports']
 
-        return Service(name, image, ports)
+        return Service(name, image)
 
-    def __init__(self, name, image, ports):
+    def __init__(self, name, image):
         self.name = name
         self.image = image
-        self.ports = ports
-
-    @property
-    def target_port(self):
-        return self.ports[0]['TargetPort']
-
-    @property
-    def published_port(self):
-        return self.ports[0]['PublishedPort']
 
     @staticmethod
     def all():
-        def is_published(service):
-            attrs = service.attrs
-            return 'Ports' in attrs['Endpoint'] and attrs['Endpoint']['Ports']
-
         services = docker_api.services()
-        return [Service.from_docker_obj(s) for s in services if is_published(s)]
+        return [Service.from_docker_obj(s) for s in services]

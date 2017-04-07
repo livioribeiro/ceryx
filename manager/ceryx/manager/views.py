@@ -22,7 +22,7 @@ def login():
             login_user(user)
             return redirect(url_for('list_routes'))
         else:
-            flash('Incorrect email or password')
+            flash('Incorrect email or password', 'error')
 
     return render_template('login.html', form=form)
 
@@ -65,10 +65,14 @@ def new_route():
 
     if form.validate_on_submit():
         route = Route(form.source.data, form.target.data)
-        Route.add(route)
 
-        flash('Route "{}" added'.format(route.source))
-        return redirect(url_for('list_routes'))
+        try:
+            Route.add(route)
+            flash(f'Route "{route.source}" added', 'success')
+            return redirect(url_for('list_routes'))
+        except Exception as e:
+            app.logging.error(e)
+            flash('Failed to add route')
 
     return render_template('routes/new.html', form=form)
 
@@ -79,9 +83,13 @@ def delete_route(route):
     if route != request.form['route']:
         abort(400)
 
-    Route.delete(route)
+    try:
+        Route.delete(route)
+        flash(f'Route "{route}" deleted', 'success')
+    except Exception as e:
+        app.logging.error(e)
+        flash(f'Could not delete route {route}', 'error')
 
-    flash('Route "{}" deleted'.format(route))
     return redirect(url_for('list_routes'))
 
 
@@ -101,11 +109,16 @@ def new_user():
         user.set_password(form.password.data)
 
         session = db.session
-        session.add(user)
-        session.commit()
 
-        flash('User "{}" added'.format(user.name))
-        return redirect(url_for('list_users'))
+        try:
+            session.add(user)
+            session.commit()
+            flash(f'User "{user.name}" added', 'success')
+            return redirect(url_for('list_users'))
+        except Exception as e:
+            session.rollback()
+            app.logging.error(e)
+            flash('Failed to add user', 'error')
 
     return render_template('users/new.html', form=form)
 
@@ -123,11 +136,16 @@ def edit_user(user_id):
             user.set_password(form.password.data)
 
         session = db.session
-        session.add(user)
-        session.commit()
 
-        flash('User "{}" updated'.format(user.name))
-        return redirect(url_for('list_users'))
+        try:
+            session.add(user)
+            session.commit()
+            flash(f'User "{user.name}" updated', 'success')
+            return redirect(url_for('list_users'))
+        except Exception as e:
+            session.rollback()
+            app.logging.error(e)
+            flash('Failed to edit user', 'error')
 
     return render_template('users/edit.html', form=form)
 
@@ -140,8 +158,14 @@ def delete_user(user_id):
         return abort(400)
 
     session = db.session
-    session.delete(user)
-    session.commit()
 
-    flash('User "{}" deleted'.format(user.name))
+    try:
+        session.delete(user)
+        session.commit()
+        flash(f'User "{user.name}" deleted', 'success')
+    except Exception as e:
+        session.rollback()
+        app.logging.error(e)
+        flash('Failed to delete user', 'error')
+
     return redirect(url_for('list_users'))
