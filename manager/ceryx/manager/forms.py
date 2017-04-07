@@ -4,10 +4,17 @@ from wtforms import validators as val
 
 from . import ceryx_api, docker_api
 
+PORT_MIN = 1
+PORT_MAX = 65535
+
 
 class RouteForm(FlaskForm):
     source = wtf.StringField('Hostname', [val.InputRequired()])
     target = wtf.SelectField('Service', [val.InputRequired()])
+    port = wtf.IntegerField('Port', [
+        val.InputRequired(),
+        val.NumberRange(min=PORT_MIN, max=PORT_MAX)
+    ])
 
     def validate_source(self, field):
         if ceryx_api.has_route(field.data):

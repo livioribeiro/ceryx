@@ -1,3 +1,5 @@
+import re
+
 import bcrypt
 import flask_login
 
@@ -48,7 +50,7 @@ class Route:
 
         def is_orphan(route):
             for s in services:
-                if s.name == route['target']:
+                if re.match(s.name + r'(:\d+?)?$', route["target"]):
                     return False
             return True
 
