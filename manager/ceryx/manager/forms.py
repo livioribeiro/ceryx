@@ -3,22 +3,28 @@ import wtforms as wtf
 from wtforms import validators as val
 
 from . import ceryx_api, docker_api
+from .models import Route
 
 PORT_MIN = 1
 PORT_MAX = 65535
 
 
+_route_port_validators = [
+    val.InputRequired(),
+    val.NumberRange(min=PORT_MIN, max=PORT_MAX, message='Invalid port'),
+]
+
+
 class RouteForm(FlaskForm):
     source = wtf.StringField('Hostname', [val.InputRequired()])
     target = wtf.SelectField('Service', [val.InputRequired()])
-    port = wtf.IntegerField('Port', [
-        val.InputRequired(),
-        val.NumberRange(min=PORT_MIN, max=PORT_MAX)
-    ])
+    port = wtf.IntegerField('Port',
+                            validators=_route_port_validators,
+                            default=Route.DEFAULT_PORT)
 
     def validate_source(self, field):
         if ceryx_api.has_route(field.data):
-            raise val.ValidationError('Route "{}" already exists'.format(field.data))
+            raise val.ValidationError(f'Route "{field.data}" already exists')
 
     def validate_target(self, field):
         if not docker_api.has_service(field.data):

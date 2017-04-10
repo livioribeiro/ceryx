@@ -64,7 +64,7 @@ def new_route():
     form.target.choices = [(s.name, s.name) for s in services]
 
     if form.validate_on_submit():
-        route = Route(form.source.data, f'{form.target.data}:{form.port.data}')
+        route = Route(form.source.data, form.target.data, form.port.data)
 
         try:
             Route.add(route)

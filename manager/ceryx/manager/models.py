@@ -38,27 +38,48 @@ class User(db.Model, flask_login.UserMixin):
 
 
 class Route:
-    def __init__(self, source, target, is_orphan=False):
+    DEFAULT_PORT = 80
+
+    def __init__(self, source, target, port, is_orphan=False):
         self.source = source
         self.target = target
+        self.port = port
         self.is_orphan = is_orphan
+
+    @staticmethod
+    def _is_orphan(route, services):
+        for s in services:
+            if re.match(s.name + r'(:\d+?)?$', route["target"]):
+                return False
+        return True
+
+    @staticmethod
+    def _from_api(route, services):
+        source = route['source']
+        target_port = route['target'].split(':')
+        target = target_port[0]
+        port = Route.DEFAULT_PORT if len(target_port) < 2 else target_port[1]
+
+        return Route(source, target, port, Route._is_orphan(route, services))
+
 
     @staticmethod
     def all():
         services = docker_api.services()
         routes = ceryx_api.routes()
 
-        def is_orphan(route):
-            for s in services:
-                if re.match(s.name + r'(:\d+?)?$', route["target"]):
-                    return False
-            return True
-
-        return [Route(r['source'], r['target'], is_orphan(r)) for r in routes]
+        return [Route._from_api(r, services) for r in routes]
 
     @staticmethod
     def add(route):
-        ceryx_api.add_route(route.source, route.target)
+        source = route.source
+
+        if route.port != Route.DEFAULT_PORT:
+            target = f'{route.target}:{route.port}'
+        else:
+            target = route.target
+
+        ceryx_api.add_route(source, target)
 
     @staticmethod
     def get(source):
@@ -66,7 +87,8 @@ class Route:
         if route is None:
             raise Route.NotFound()
 
-        return Route(route['source'], route['target'])
+        services = docker_api.services()
+        return Route._from_api(route, services)
 
     @staticmethod
     def delete(route):

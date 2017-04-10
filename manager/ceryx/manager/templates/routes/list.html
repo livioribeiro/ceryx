@@ -21,10 +21,15 @@
             <td>
                 {{ route.source }}
                 {% if route.is_orphan %}
-                <span class="label label-danger" title="Service does not exist">orphan</span>
+                <span class="label label-danger" title="The service associated with this route does not exist">orphan</span>
                 {% endif %}
             </td>
-            <td>{{ route.target }}</td>
+            <td>
+                {{ route.target }}
+                {% if route.port != 80 %}
+                : {{ route.port }}
+                {% endif %}
+            </td>
             <td>
                 {% include('routes/_btn-delete.html') %}
             </td>
