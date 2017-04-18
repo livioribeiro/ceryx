@@ -17,6 +17,7 @@ setup(
         'Flask-WTF==0.14.2',
         'WTForms==2.1',
         'Flask-SQLAlchemy==2.2',
+        'psycopg2==2.7.1 ',
         'Flask-Migrate==2.0.3',
         'Flask-Login==0.4.0',
         'bcrypt==3.1.3',

@@ -73,6 +73,7 @@ services:
       - POSTGRES_USER=ceryx
       - POSTGRES_PASSWORD=ceryx
       - POSTGRES_DB=ceryx
+      - PGDATA=/data
     volumes:
       - postgres_data:/data
 

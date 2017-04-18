@@ -41,6 +41,11 @@ def list_services():
     return render_template('services/list.html', services=services)
 
 
+@app.route('/', methods=['GET'])
+def index_redirect():
+    return redirect(url_for('list_routes'))
+
+
 @app.route('/routes', methods=['GET'])
 @login_required
 def list_routes():
