@@ -41,8 +41,8 @@
             {% endif %}
           {% endwith %}
           
-          {{ form.email.label(class='sr-only') }}
-          {{ form.email(class='form-control', type='email', placeholder=form.email.label.text) }}
+          {{ form.username.label(class='sr-only') }}
+          {{ form.username(class='form-control', placeholder=form.username.label.text) }}
           
           {{ form.password.label(class='sr-only') }}
           {{ form.password(class='form-control', placeholder=form.password.label.text) }}

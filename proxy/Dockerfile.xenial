@@ -1,4 +1,3 @@
-
 FROM openresty/openresty:1.11.2.1-xenial
 MAINTAINER Antonis Kalipetis <akalipetis@gmail.com>
 

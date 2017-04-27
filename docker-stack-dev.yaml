@@ -14,33 +14,18 @@ services:
     environment:
       - CERYX_REDIS_HOST=redis
       - CERYX_REDIS_PORT=6379
+      - CERYX_CACHE_EXPTIME=300
     volumes:
       - ./proxy/nginx/conf:/usr/local/openresty/nginx/conf
       - ./proxy/nginx/lualib:/usr/local/openresty/nginx/lualib
       - ./proxy/nginx/sites-enabled:/usr/local/openresty/nginx/sites-enabled
-
-  api:
-    image: sourcelair/ceryx-api:latest
-    build: ./api
-    command: python /opt/ceryx/bin/ceryx-api-server.py
-    depends_on:
-      - redis
-    ports:
-      - 5555
-    environment:
-      - CERYX_REDIS_HOST=redis
-      - CERYX_REDIS_PORT=6379
-      - CERYX_API_HOST=0.0.0.0
-    volumes:
-      - ./api:/opt/ceryx
   
   manager:
     image: sourcelair/ceryx-manager:latest
     build: ./manager
     command: python /opt/ceryx/bin/ceryx-manager-server.py
     depends_on:
-      - api
-      - postgres
+      - redis
     deploy:
       placement:
         constraints:
@@ -48,13 +33,11 @@ services:
     ports:
       - '8080:8080'
     environment:
-      - CERYX_API_HOST=api
-      - CERYX_API_PORT=5555
       - CERYX_WEB_HOST=0.0.0.0
       - CERYX_SECRET_KEY=/run/secrets/secret-key.txt
       - CERYX_PROXY_NETWORK=proxy
-      - DATABASE_URL=postgresql://ceryx:ceryx@postgres:5432/ceryx
-      - FLASK_APP=ceryx/manager/__init__.py # for running docker-compose exec manager flask ...
+      - CERYX_REDIS_HOST=redis
+      - CERYX_REDIS_PORT=6379
     volumes:
       - './manager:/opt/ceryx'
       - '/var/run/docker.sock:/var/run/docker.sock'
@@ -67,19 +50,15 @@ services:
     volumes:
       - redis_data:/data
   
-  postgres:
-    image: postgres:9.6.2-alpine
-    environment:
-      - POSTGRES_USER=ceryx
-      - POSTGRES_PASSWORD=ceryx
-      - POSTGRES_DB=ceryx
-      - PGDATA=/data
-    volumes:
-      - postgres_data:/data
+  redis-commander:
+    image: redis-commander
+    build: redis-commander
+    command: --redis-host redis
+    ports:
+      - '8081:8081'
 
 volumes:
   redis_data:
-  postgres_data:
 
 networks:
   proxy:

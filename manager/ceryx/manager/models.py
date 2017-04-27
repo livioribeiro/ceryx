@@ -1,40 +1,47 @@
 import re
 
-import bcrypt
 import flask_login
 
-from ceryx.manager import db, ceryx_api, docker_api
+from ceryx.manager import router, users, docker_api
 
 
-class User(db.Model, flask_login.UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80))
-    email = db.Column(db.String(120), unique=True)
-    password = db.Column(db.String(200))
+class User(flask_login.UserMixin):
 
-    def __init__(self, name, email):
-        self.name = name
-        self.email = email
-        self.password = None
+    def __init__(self, username):
+        self.username = username
+
+    def get_id(self):
+        return self.username
 
     @staticmethod
-    def login(email, plain_password):
-        user = User.query.filter_by(email=email).first()
-        if user is not None:
-            password = user.password.encode()
-            plain_password = plain_password.encode()
-            return user if bcrypt.checkpw(plain_password, password) else None
+    def login(username, password):
+        return User(username) if users.login(username, password) else None
 
-        return None
+    @staticmethod
+    def get(username):
+        u = users.lookup(username)
+        if not u:
+            return None
 
-    def set_password(self, plain_password):
-        hashed_password = bcrypt.hashpw(plain_password.encode(),
-                                        bcrypt.gensalt())
+        return User(u[0])
 
-        self.password = hashed_password.decode('utf-8')
-
-    def __repr__(self):
-        return '<User %r (%r)>' % self.name, self.email
+    @staticmethod
+    def all():
+        for user in users.lookup():
+            yield User(user)
+    
+    @staticmethod
+    def insert(username, plain_password):
+        users.insert(username, plain_password)
+        return User(username)
+    
+    @staticmethod
+    def update(username, new_password):
+        return User.insert(username, new_password)
+    
+    @staticmethod
+    def delete(username):
+        users.delete(username)
 
 
 class Route:
@@ -66,7 +73,7 @@ class Route:
     @staticmethod
     def all():
         services = docker_api.services()
-        routes = ceryx_api.routes()
+        routes = router.lookup_routes('*')
 
         return [Route._from_api(r, services) for r in routes]
 
@@ -79,11 +86,11 @@ class Route:
         else:
             target = route.target
 
-        ceryx_api.add_route(source, target)
+        router.insert(source, target)
 
     @staticmethod
     def get(source):
-        route = ceryx_api.route(source)
+        route = router.lookup(source)
         if route is None:
             raise Route.NotFound()
 
@@ -93,7 +100,7 @@ class Route:
     @staticmethod
     def delete(route):
         route = route.source if isinstance(route, Route) else route
-        ceryx_api.delete_route(route)
+        router.delete(route)
 
     class NotFound(Exception):
         pass
