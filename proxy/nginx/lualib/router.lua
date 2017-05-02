@@ -1,9 +1,11 @@
 local container_url = ngx.var.container_url
 local host = ngx.var.host
+-- nginx $uri contains the request path in this context
+local path = ngx.var.uri
 
 -- Check if key exists in local cache
 local cache = ngx.shared.ceryx
-local res, flags = cache:get(host)
+local res, flags = cache:get(host .. path)
 if res then
     ngx.var.container_url = res
     return
@@ -21,7 +23,28 @@ local res, err = red:connect(redis_host, redis_port)
 -- Exit if could not connect to Redis
 if not res then
     ngx.log(ngx.ERR, "failed to connect to redis: " .. err)
-    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    ngx.exit(ngx.ERROR)
+end
+
+-- Setup redis script
+local redis_script, flags = cache:get('redis_script')
+if not redis_script then
+    -- Read routelib.lua file
+    io.input('/usr/local/openresty/nginx/lualib/routelib.lua')
+    routelib = io.read('*all')
+
+    -- Flush Redis scripts
+    red:script('flush')
+
+    -- Load script into Redis
+    hash, err = red:script('load', routelib)
+
+    if err then
+        ngx.log(ngx.ERR, "failed to load script into redis: " .. err)
+        ngx.exit(ngx.ERROR)
+    end
+
+    cache:set('redis_script', routelib)
 end
 
 -- Construct Redis key
@@ -30,12 +53,12 @@ if not prefix then prefix = "ceryx" end
 local key = prefix .. ":routes:" .. host
 
 -- Try to get target for host
-res, err = red:get(key)
+res, err = red:eval(redis_script, 1, key, path)
 
 -- Exit if route could not be read
 if err then
     ngx.log(ngx.ERR, "error reading route: " .. err)
-    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    ngx.exit(ngx.ERROR)
 end
 
 if not res or res == ngx.null then
