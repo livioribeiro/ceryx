@@ -12,9 +12,10 @@ services:
       - default
       - proxy
     environment:
-      - CERYX_REDIS_HOST=redis
-      - CERYX_REDIS_PORT=6379
-      - CERYX_CACHE_EXPTIME=300
+      - DEBUG=1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_EXPTIME=300
     volumes:
       - ./proxy/nginx/conf:/usr/local/openresty/nginx/conf
       - ./proxy/nginx/lualib:/usr/local/openresty/nginx/lualib
