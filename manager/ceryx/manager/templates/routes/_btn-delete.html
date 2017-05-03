@@ -1,8 +1,9 @@
-<form action="{{ url_for('delete_route', route=route.source) }}" method="post">
+<form action="{{ url_for('delete_route', route=route.source, path=route.path) }}" method="post">
     <input type="hidden" name="route" value="{{ route.source }}" />
+    <input type="hidden" name="path" value="{{ route.path }}" />
     <button type="button" class="btn btn-danger btn-sm"
             title="delete route"
-            onclick="if (confirm('Delete route \'{{ route.source }}\'?')) { submit() }">
+            onclick="if (confirm('Delete route \'{{ route.source }}{{ route.path }}\'?')) { submit() }">
         <span class="glyphicon glyphicon-trash"></span>
     </button>
 </form>

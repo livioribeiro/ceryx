@@ -47,8 +47,9 @@ class User(flask_login.UserMixin):
 class Route:
     DEFAULT_PORT = 80
 
-    def __init__(self, source, target, port, is_orphan=False):
+    def __init__(self, source, path, target, port, is_orphan=False):
         self.source = source
+        self.path = path
         self.target = target
         self.port = port
         self.is_orphan = is_orphan
@@ -61,13 +62,18 @@ class Route:
         return True
 
     @staticmethod
-    def _from_api(route, services):
-        source = route['source']
+    def _parse(route, services):
+        source_path = route['source'].split(':')
+        source = source_path[0]
+        path = source_path[1] if len(source_path) == 2 else '/'
+
         target_port = route['target'].split(':')
         target = target_port[0]
         port = Route.DEFAULT_PORT if len(target_port) < 2 else target_port[1]
 
-        return Route(source, target, port, Route._is_orphan(route, services))
+        is_orphan = Route._is_orphan(route, services)
+
+        return Route(source, path, target, port, is_orphan)
 
 
     @staticmethod
@@ -75,11 +81,11 @@ class Route:
         services = docker_api.services()
         routes = router.lookup_routes('*')
 
-        return [Route._from_api(r, services) for r in routes]
+        return [Route._parse(r, services) for r in routes]
 
     @staticmethod
     def add(route):
-        source = route.source
+        source = route.source if route.path is None else f'{route.source}:{route.path}'
 
         if route.port != Route.DEFAULT_PORT:
             target = f'{route.target}:{route.port}'
@@ -89,17 +95,18 @@ class Route:
         router.insert(source, target)
 
     @staticmethod
-    def get(source):
-        route = router.lookup(source)
+    def get(source, path):
+        route = router.lookup(f'{source}:{path}')
         if route is None:
             raise Route.NotFound()
 
         services = docker_api.services()
-        return Route._from_api(route, services)
+        return Route._parse(route, services)
 
     @staticmethod
     def delete(route):
-        route = route.source if isinstance(route, Route) else route
+        if isinstance(route, Route):
+            route = f'{route.source}:{route.path}'
         router.delete(route)
 
     class NotFound(Exception):

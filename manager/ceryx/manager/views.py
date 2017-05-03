@@ -70,7 +70,10 @@ def new_route():
     form.target.choices = [(s.name, s.name) for s in services]
 
     if form.validate_on_submit():
-        route = Route(form.source.data, form.target.data, form.port.data)
+        route = Route(form.source.data,
+                      form.path.data,
+                      form.target.data,
+                      form.port.data)
 
         try:
             Route.add(route)
@@ -83,18 +86,22 @@ def new_route():
     return render_template('routes/new.html', form=form)
 
 
-@app.route('/routes/<path:route>/delete', methods=['POST'])
+@app.route('/routes/<string:route>/<path:path>/delete', methods=['POST'])
+@app.route('/routes/<string:route>/delete', methods=['POST'])
 @login_required
-def delete_route(route):
+def delete_route(route, path=None):
     if route != request.form['route']:
+        abort(400)
+    
+    if path is not None and path != request.form['path']:
         abort(400)
 
     try:
         Route.delete(route)
-        flash(f'Route "{route}" deleted', 'success')
+        flash(f'Route "{route}{path}" deleted', 'success')
     except Exception as e:
         app.logging.error(e)
-        flash(f'Could not delete route {route}', 'error')
+        flash(f'Could not delete route {route}{path}', 'error')
 
     return redirect(url_for('list_routes'))
 
