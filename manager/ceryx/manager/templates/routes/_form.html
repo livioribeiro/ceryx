@@ -1,34 +1,53 @@
 <form method="post">
     {{ form.csrf_token }}
-    <div class="form-group {{ 'has-error' if form.source.errors else '' }}">
-        {{ form.source.label }}
-        {{ form.source(class='form-control') }}
-        {% if form.source.errors %}
-            {% for error in form.source.errors %}
-            <span class="help-block">{{ error }}</span>
-            {% endfor %}
-        {% endif %}
-    </div>
 
-    <div class="form-group {{ 'has-error' if form.target.errors else '' }}">
-        {{ form.target.label }}
-        {{ form.target(class='form-control') }}
-        {% if form.target.errors %}
-            {% for error in form.target.errors %}
-            <span class="help-block">{{ error }}</span>
-            {% endfor %}
-        {% endif %}
-    </div>
+    <fieldset>
+        <legend>Source</legend>
 
-    <div class="form-group {{ 'has-error' if form.port.errors else '' }}">
-        {{ form.port.label }}
-        {{ form.port(class='form-control') }}
-        {% if form.port.errors %}
-            {% for error in form.port.errors %}
-            <span class="help-block">{{ error }}</span>
-            {% endfor %}
-        {% endif %}
-    </div>
+        <div class="form-group {{ 'has-error' if form.host.errors else '' }}">
+            {{ form.host.label }}
+            {{ form.host(class='form-control') }}
+            {% if form.host.errors %}
+                {% for error in form.host.errors %}
+                <span class="help-block">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if form.path.errors else '' }}">
+            {{ form.path.label }}
+            {{ form.path(class='form-control') }}
+            {% if form.path.errors %}
+                {% for error in form.path.errors %}
+                <span class="help-block">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Target</legend>
+
+        <div class="form-group {{ 'has-error' if form.target.errors else '' }}">
+            {{ form.target.label }}
+            {{ form.target(class='form-control') }}
+            {% if form.target.errors %}
+                {% for error in form.target.errors %}
+                <span class="help-block">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if form.port.errors else '' }}">
+            {{ form.port.label }}
+            {{ form.port(class='form-control') }}
+            {% if form.port.errors %}
+                {% for error in form.port.errors %}
+                <span class="help-block">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </fieldset>
 
     <div class="form-group">
         <button type="submit" class="btn btn-primary">Submit</button>

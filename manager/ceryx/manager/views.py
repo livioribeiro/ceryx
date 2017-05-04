@@ -4,7 +4,7 @@ from flask import abort, flash, redirect, request, render_template, url_for
 from flask_login import login_required, login_user, logout_user
 
 from . import app, users, router
-from .forms import RouteForm, LoginForm, UserAddForm, UserEditForm
+from .forms import RouteForm, RouteDeleteForm, LoginForm, UserAddForm, UserEditForm
 from .models import User, Route, Service
 
 
@@ -64,45 +64,74 @@ def orphaned_routes():
 
 @app.route('/routes/new', methods=['GET', 'POST'])
 @login_required
-def new_route():
+def route_add():
     services = Service.all()
     form = RouteForm()
     form.target.choices = [(s.name, s.name) for s in services]
 
     if form.validate_on_submit():
-        route = Route(form.source.data,
+        route = Route(form.host.data,
                       form.path.data,
                       form.target.data,
                       form.port.data)
 
         try:
             Route.add(route)
-            flash(f'Route "{route.source}" added', 'success')
+            flash(f'Route "{route.host}{route.path}" added', 'success')
             return redirect(url_for('list_routes'))
         except Exception as e:
-            app.logging.error(e)
-            flash('Failed to add route')
+            app.logger.error(e)
+            flash(f'Failed to add route "{route.host}{route.path}"')
 
     return render_template('routes/new.html', form=form)
 
 
-@app.route('/routes/<string:route>/<path:path>/delete', methods=['POST'])
-@app.route('/routes/<string:route>/delete', methods=['POST'])
+@app.route('/routes/edit/<path:route>', methods=['GET', 'POST'])
 @login_required
-def delete_route(route, path=None):
-    if route != request.form['route']:
-        abort(400)
-    
-    if path is not None and path != request.form['path']:
-        abort(400)
+def route_edit(route):
+    idx = route.index('/')
+    host, path = route[:idx], route[idx:]
+
+    route = None
+    try:
+        route = Route.get(host, path)
+    except Route.NotFound:
+        abort(404)
+
+    services = Service.all()
+    form = RouteForm(obj=route)
+    form.target.choices = [(s.name, s.name) for s in services]
+
+    if form.validate_on_submit():
+        try:
+            route = route.update(form.host.data,
+                                 form.path.data,
+                                 form.target.data,
+                                 form.port.data)
+
+            flash(f'Route "{route.host}{route.path}" updated', 'success')
+            return redirect(url_for('list_routes'))
+        except Exception as e:
+            app.logger.error(e)
+            flash(f'Failed to update route "{route.host}{route.path}"')
+
+    return render_template('routes/edit.html', form=form)
+
+
+@app.route('/routes/delete/<path:route>', methods=['POST'])
+@login_required
+def route_delete(route):
+    idx = route.index('/')
+    host, path = route[:idx], route[idx:]
+    route = f'{host}:{path}'
 
     try:
         Route.delete(route)
-        flash(f'Route "{route}{path}" deleted', 'success')
+        flash(f'Route "{host}{path}" deleted', 'success')
     except Exception as e:
-        app.logging.error(e)
-        flash(f'Could not delete route {route}{path}', 'error')
-
+        app.logger.error(e)
+        flash(f'Could not delete route {host}{path}', 'error')
+    
     return redirect(url_for('list_routes'))
 
 

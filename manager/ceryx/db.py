@@ -99,6 +99,23 @@ class RedisRouter:
         """
         source_key = self._prefixed_route_key(source)
         self.client.set(source_key, target)
+    
+    def update(self, old_source, new_source, target):
+        """
+        Updates a route in the database
+        """
+
+        new_key = self._prefixed_route_key(new_source)
+        
+        pipe = self.client.pipeline()
+        pipe.set(new_key, target)
+
+        # if old source is equal to new source, there is no need to delete the old key
+        if old_source != new_source:
+            old_key = self._prefixed_route_key(old_source)
+            pipe.delete(old_key)
+        
+        pipe.execute()
 
     def delete(self, source):
         """

@@ -12,14 +12,16 @@
 
 <table class="table table-bordered table-hover">
     <thead>
-        <th>Hostname</th>
+        <th>Host</th>
+        <th>Path</th>
         <th>Service</th>
         <th></th>
     </thead>
     <tbody>
         {% for route in routes %}
         <tr>
-            <td>{{ route.source }}</td>
+            <td>{{ route.host }}</td>
+            <td>{{ route.path }}</td>
             <td>{{ route.target }}</td>
             <td>
                 {% include('routes/_btn-delete.html') %}

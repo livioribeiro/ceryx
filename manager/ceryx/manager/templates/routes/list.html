@@ -7,14 +7,15 @@
 <h1>Routes</h1>
 
 <p>
-    <a href="{{ url_for('new_route') }}" class="btn btn-primary">New Route</a>
+    <a href="{{ url_for('route_add') }}" class="btn btn-primary">New Route</a>
 </p>
 
 <table class="table table-bordered table-hover table-striped">
     <thead>
-        <th>Address</th>
+        <th>Hostname</th>
+        <th>Path</th>
         <th>Service</th>
-        <th></th>
+        <th colspan="2"></th>
     </thead>
     <tbody>
         {% for route in routes %}
@@ -23,13 +24,20 @@
                 {% if route.is_orphan %}
                 <span class="label label-danger" title="The service associated with this route does not exist">orphan</span>
                 {% endif %}
-                {{ route.source }} {{ route.path }}
+                {{ route.host }}
             </td>
+            <td>{{ route.path or '/' }}</td>
             <td>
                 {{ route.target }}
                 {% if route.port != 80 %}
                 : {{ route.port }}
                 {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('route_edit', route=route.host ~ route.path) }}"
+                   class="btn btn-sm btn-primary">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                </a>
             </td>
             <td>
                 {% include('routes/_btn-delete.html') %}
