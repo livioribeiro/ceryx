@@ -1,6 +1,6 @@
 local container_url = ngx.var.container_url
 local host = ngx.var.host
-local path = ngx.var.uri -- nginx $uri contains the request path in this context
+local path = ngx.var.uri
 local cache = ngx.shared.ceryx
 
 -- Setup
@@ -41,15 +41,33 @@ if res then
     return
 end
 
--- Prepare Redis script
+local redis = require "resty.redis"
+local red = redis:new()
+red:set_timeout(100) -- 100 ms
+local res, err = red:connect(redis_host, redis_port)
+
+-- Exit if could not connect to Redis
+if not res or res == ngx.null then
+    ngx.log(ngx.ERR, "failed to connect to redis at " .. redis_host .. ':' .. redis_port .. ': ' .. err)
+    ngx.exit(ngx.ERROR)
+end
+
+-- Prepare Redis lua script
 local route_script, flags = cache:get('route_script')
 if not route_script then
     -- Read routelib.lua file
     io.input('/usr/local/openresty/nginx/lualib/routelib.lua')
-    route_script, err = io.read('*all')
+    server_script, err = io.read('*all')
 
     if err then
         ngx.log(ngx.ERR, 'failed to read redis routelib script: ' .. err)
+        ngx.exit(ngx.ERROR)
+    end
+
+    route_script, err = red:script('load', server_script)
+
+    if err then
+        ngx.log(ngx.ERR, 'failed to load redis routelib script: ' .. err)
         ngx.exit(ngx.ERROR)
     end
 
@@ -58,22 +76,11 @@ if not route_script then
     end
 end
 
-local redis = require "resty.redis"
-local red = redis:new()
-red:set_timeout(100) -- 100 ms
-local res, err = red:connect(redis_host, redis_port)
-
--- Exit if could not connect to Redis
-if not res then
-    ngx.log(ngx.ERR, "failed to connect to redis at " .. redis_host .. ':' .. redis_port .. ': ' .. err)
-    ngx.exit(ngx.ERROR)
-end
-
 -- Construct Redis key
 local key = redis_prefix .. ":routes:" .. host
 
 -- Try to get target for host
-res, err = red:eval(route_script, 1, key, path)
+res, err = red:evalsha(route_script, 1, key, path)
 
 -- Exit if route could not be read
 if err then
@@ -82,19 +89,26 @@ if err then
 end
 
 if not res or res == ngx.null then
-    ngx.log(ngx.WARN, "no route for host: " .. host)
+    ngx.log(ngx.WARN, "no route for host: " .. host .. path)
 
     -- Construct Redis key for $wildcard
-    key = prefix .. ":routes:$wildcard"
+    key = redis_prefix .. ":routes:$wildcard"
     res, err = red:get(key)
+    
     if not res or res == ngx.null then
         ngx.exit(ngx.HTTP_NOT_FOUND)
     end
-    ngx.var.container_url = res
+
+    ngx.var.container_url = res[1]
+    ngx.var.container_path = res[2]
+
     return
 end
 
 -- Save found key to local cache for specified time in seconds
-cache:set(host, res, cache_exptime)
+if not debug_mode then
+    cache:set(host, res, cache_exptime)
+end
 
-ngx.var.container_url = res
+ngx.var.container_url = res[1]
+ngx.var.container_path = res[2]
