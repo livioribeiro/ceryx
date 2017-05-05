@@ -78,9 +78,38 @@ def new_route():
             return redirect(url_for('list_routes'))
         except Exception as e:
             app.logging.error(e)
-            flash('Failed to add route')
+            flash(f'Failed to add route "{form.source.data}"')
 
     return render_template('routes/new.html', form=form)
+
+
+@app.route('/routes/edit/<string:source>', methods=['GET', 'POST'])
+@login_required
+def edit_route(source):
+    route = None
+    try:
+        route = Route.get(source)
+    except Exception as e:
+        abort(404)
+
+    services = Service.all()
+    form = RouteForm(obj=route)
+    form.target.choices = [(s.name, s.name) for s in services]
+
+    if form.validate_on_submit():
+        try:
+            route.update(form.source.data, form.target.data, form.port.data)
+            if source == route.source:
+                flash(f'Route "{source}" updated', 'success')
+            else:
+                flash(f'Route "{source}" updated into {route.source}', 'success')
+            return redirect(url_for('list_routes'))
+        except Exception as e:
+            raise e
+            app.logger.error(e)
+            flash(f'Failed to update route "{old_source}"')
+
+    return render_template('routes/edit.html', form=form)
 
 
 @app.route('/routes/<path:route>/delete', methods=['POST'])

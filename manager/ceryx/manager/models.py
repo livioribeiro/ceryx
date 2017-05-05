@@ -52,6 +52,14 @@ class Route:
         self.target = target
         self.port = port
         self.is_orphan = is_orphan
+    
+    def update(self, source, target, port):
+        if port != Route.DEFAULT_PORT:
+            target = f'{route.target}:{route.port}'
+        else:
+            target = target
+
+        router.update(self.source, source, target)
 
     @staticmethod
     def _is_orphan(route, services):
@@ -90,11 +98,15 @@ class Route:
 
     @staticmethod
     def get(source):
-        route = router.lookup(source)
-        if route is None:
+        target = router.lookup(source)
+        if target is None:
             raise Route.NotFound()
 
         services = docker_api.services()
+        route = {
+            'source': source,
+            'target': target,
+        }
         return Route._from_api(route, services)
 
     @staticmethod

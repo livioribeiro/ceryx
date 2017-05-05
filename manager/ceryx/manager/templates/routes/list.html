@@ -14,7 +14,7 @@
     <thead>
         <th>Hostname</th>
         <th>Service</th>
-        <th></th>
+        <th colspan="2"></th>
     </thead>
     <tbody>
         {% for route in routes %}
@@ -30,6 +30,12 @@
                 {% if route.port != 80 %}
                 : {{ route.port }}
                 {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('edit_route', source=route.source) }}" class="btn btn-primary btn-sm"
+                   title="update route">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                </button>
             </td>
             <td>
                 {% include('routes/_btn-delete.html') %}

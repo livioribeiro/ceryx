@@ -25,6 +25,12 @@ class RedisRouter:
                 self.errors = {'message': message}
             else:
                 self.errors = errors
+    
+    class SourceExists(Exception):
+        """
+        Exception raised when trying to update a source to a new hostname
+        that already exists in the database
+        """
 
     @staticmethod
     def from_config(path=None):
@@ -99,6 +105,19 @@ class RedisRouter:
         """
         source_key = self._prefixed_route_key(source)
         self.client.set(source_key, target)
+    
+    def update(self, old_source, new_source, target):
+        old_key = self._prefixed_route_key(old_source)
+        new_key = self._prefixed_route_key(new_source)
+
+        if self.client.exists(new_key):
+            raise SourceExists(new_key)
+        
+        pipe = self.client.pipeline()
+        pipe.set(old_key, target)
+        pipe.rename(old_key, new_key)
+        pipe.execute()
+
 
     def delete(self, source):
         """
