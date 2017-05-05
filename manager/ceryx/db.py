@@ -25,6 +25,20 @@ class RedisRouter:
                 self.errors = {'message': message}
             else:
                 self.errors = errors
+    
+    class HostExists(Exception):
+        """
+        Exception raised when trying to update a host mapping to a key
+        that already exists in the database
+        """
+        pass
+    
+    class PathExists(Exception):
+        """
+        Exception raised when trying to update a path to a key that
+        already exists in the hashmap
+        """
+        pass
 
     @staticmethod
     def from_config(path=None):
@@ -50,21 +64,29 @@ class RedisRouter:
         
         return prefixed_key
 
-    def lookup(self, host, silent=False):
+    def lookup(self, host, path=None, silent=False):
         """
-        Fetches the target host for the given host name. If no host matching
-        the given name is found and silent is False, raises a LookupNotFound
-        exception.
+        Fetches the target host for the given host name and path. If no host matching
+        the given name is found and silent is False, raises a LookupNotFound exception.
         """
         lookup_host = self._prefixed_route_key(host)
+        path = path or '/'
 
-        target_host = self.client.get(lookup_host)
+        target_host = self.client.hget(lookup_host, path)
         if target_host is None and not silent:
             raise RedisRouter.LookupNotFound(
                 'Given host does not match with any route'
             )
         else:
             return target_host
+    
+    def lookup_paths(self, host):
+        """
+        Fetches the (path, target) pairs for the given host, returning
+        a dict of the key -> value pairs
+        """
+        lookup_host = self._prefixed_route_key(host)
+        return self.client.hgetall(lookup_host)
 
     def lookup_hosts(self, pattern):
         """
@@ -87,42 +109,59 @@ class RedisRouter:
         for host in hosts:
             routes.append(
                 {
-                    'source': host,
-                    'target': self.lookup(host, silent=True)
+                    'host': host,
+                    'paths': self.lookup_paths(host)
                 }
             )
         return routes
 
-    def insert(self, source, target):
+    def insert(self, host, path, target):
         """
-        Inserts a new source/target host entry in to the database.
+        Inserts a new host/path -> target entry in to the database.
         """
-        source_key = self._prefixed_route_key(source)
-        self.client.set(source_key, target)
+        host_key = self._prefixed_route_key(host)
+        self.client.hset(host_key, path, target)
     
-    def update(self, old_source, new_source, target):
+    def update_path(self, host, old_path, new_path, target):
         """
-        Updates a route in the database
+        Updates a path -> target mapping
         """
-
-        new_key = self._prefixed_route_key(new_source)
+        host_key = self._prefixed_route_key(host)
+        
+        if self.client.hexists(host, new_path) > 0:
+            raise RedisRouter.PathExists()
         
         pipe = self.client.pipeline()
-        pipe.set(new_key, target)
-
-        # if old source is equal to new source, there is no need to delete the old key
-        if old_source != new_source:
-            old_key = self._prefixed_route_key(old_source)
-            pipe.delete(old_key)
-        
+        if old_path != new_path:
+            pipe.mdel(host_key, old_path)
+        pipe.msetnx(host_key, new_path, target)
         pipe.execute()
+    
+    def update_host(self, old_host, new_host):
+        """
+        Updates a host in the database
+        """
+        old_key = self._prefixed_route_key(old_host)
+        new_key = self._prefixed_route_key(new_host)
+        
+        if self.client.exists(new_key) > 0:
+            raise RedisRouter.HostExists()
 
-    def delete(self, source):
+        self.client.renamenx(old_key, new_key)
+
+    def delete_path(self, host, path):
         """
-        Deletes the entry of the given source, if it exists.
+        Deletes the entry of the given path, if it exists.
         """
-        source_key = self._prefixed_route_key(source)
-        self.client.delete(source_key)
+        host_key = self._prefixed_route_key(host)
+        self.client.hdel(host_key, path)
+    
+    def delete_host(self, host):
+        """
+        Deletes the entry of the given host, if it exists.
+        """
+        host_key = self._prefixed_route_key(host)
+        self.client.delete(host_key)
 
 
 class RedisUsers:

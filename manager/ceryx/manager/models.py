@@ -44,37 +44,58 @@ class User(flask_login.UserMixin):
         users.delete(username)
 
 
-class Route:
+class RouteMapping:
     DEFAULT_PATH = '/'
     DEFAULT_PORT = 80
 
-    def __init__(self, host, path, target, port, is_orphan=False):
-        self.host = host
+    def __init__(self, route, path, target, port, is_orphan=False):
+        self.route = route
         self.path = path
         self.target = target
         self.port = port
         self.is_orphan = is_orphan
-    
-    def update(self, host, path, target, port):
-        old_source = f'{self.host}:{self.path}'
-        new_source = f'{host}:{path}'
 
+    @staticmethod
+    def _is_orphan(target, services):
+        for s in services:
+            if re.match(s.name + r'(:\d+?)?$', target):
+                return False
+        return True
+
+    @staticmethod
+    def parse(services, route, path, target):
+        target_port = target.split(':')
+        target = target_port[0]
+        port = Route.DEFAULT_PORT if len(target_port) < 2 else target_port[1]
+
+        is_orphan = RouteMapping._is_orphan(route, services)
+
+        return RouteMapping(route, path, target, port)
+
+    def update(self, path, target, port):
         if isinstance(port, str):
             port = int(port)
         
         if port is not None and port != Route.DEFAULT_PORT:
             target = f'{target}:{port}'
+        
+        router.update_path(self.route.host, path, target)
+        self.path = path
+        self.target = target
+        self.port = port
 
-        router.update(old_source, new_source, target)
 
-        return Route(host, path, target, port)
+class Route:
+    DEFAULT_PATH = '/'
+    DEFAULT_PORT = 80
 
-    @staticmethod
-    def _is_orphan(route, services):
-        for s in services:
-            if re.match(s.name + r'(:\d+?)?$', route["target"]):
-                return False
-        return True
+    def __init__(self, host, paths):
+        self.host = host
+        self.paths = paths
+    
+    def update(self, host):
+        router.update_host(self.host, host)
+        self.host = host
 
     @staticmethod
     def _parse(route, services):
@@ -95,8 +116,14 @@ class Route:
         services = docker_api.services()
         routes = router.lookup_routes('*')
 
-        routes = [Route._parse(r, services) for r in routes]
-        return sorted(routes, key=lambda r: r.host + r.path)
+        route_list = []
+        for r in routes:
+            host = r['host']
+            paths = [RouteMapping.parse(services, host, p, t) for p, t in r['paths'].items()]
+            paths = sorted(paths, key=lambda p: p.path + p.target)
+            route_list.append(Route(host, paths))
+
+        return sorted(route_list, key=lambda r: r.host)
 
     @staticmethod
     def add(route):

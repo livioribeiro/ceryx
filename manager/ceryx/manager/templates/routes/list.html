@@ -12,37 +12,57 @@
 
 <table class="table table-bordered table-hover table-striped">
     <thead>
-        <th>Hostname</th>
+        <th>Host</th>
         <th>Path</th>
         <th>Service</th>
         <th colspan="2"></th>
     </thead>
     <tbody>
         {% for route in routes %}
-        <tr class="{% if route.is_orphan %}danger{% endif %}">
-            <td>
-                {% if route.is_orphan %}
-                <span class="label label-danger" title="The service associated with this route does not exist">orphan</span>
-                {% endif %}
-                {{ route.host }}
-            </td>
-            <td>{{ route.path or '/' }}</td>
-            <td>
-                {{ route.target }}
-                {% if route.port != 80 %}
-                : {{ route.port }}
-                {% endif %}
-            </td>
-            <td>
-                <a href="{{ url_for('route_edit', route=route.host ~ route.path) }}"
-                   class="btn btn-sm btn-primary">
-                    <span class="glyphicon glyphicon-pencil"></span>
-                </a>
-            </td>
-            <td>
-                {% include('routes/_btn-delete.html') %}
-            </td>
-        </tr>
+            <tr class="active">
+                <td colspan="3">{{ route.host }}</td>
+                <td>
+                    <a href="{# {{ url_for('route_edit', route=route.host ~ route.path) }} #}"
+                    class="btn btn-sm btn-primary">
+                        <span class="glyphicon glyphicon-pencil"></span>
+                    </a>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm"
+                            title="delete route">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </button>
+                </td>
+            </tr>
+            {% for path in route.paths %}
+                <tr class="{% if path.is_orphan %}danger{% endif %}">
+                    <td></td>
+                    <td>
+                        {% if path.is_orphan %}
+                        <span class="label label-danger" title="The service associated with this route does not exist">orphan</span>
+                        {% endif %}
+                        {{ route.path or '/' }}
+                    </td>
+                    <td>
+                        {{ path.target }}
+                        {% if path.port != 80 %}
+                        : {{ path.port }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{# {{ url_for('route_edit', route=route.host ~ route.path) }} #}"
+                        class="btn btn-sm btn-primary">
+                            <span class="glyphicon glyphicon-pencil"></span>
+                        </a>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm"
+                                title="delete route">
+                            <span class="glyphicon glyphicon-trash"></span>
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
         {% endfor %}
     </tbody>
 </table>
