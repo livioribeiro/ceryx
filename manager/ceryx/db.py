@@ -110,7 +110,7 @@ class RedisRouter:
         old_key = self._prefixed_route_key(old_source)
         new_key = self._prefixed_route_key(new_source)
 
-        if self.client.exists(new_key):
+        if old_source != new_source and self.client.exists(new_key):
             raise SourceExists(new_key)
         
         pipe = self.client.pipeline()
@@ -131,9 +131,16 @@ class RedisUsers:
     """
     Users db using a redis backend
     """
+
     class UserNotFound(Exception):
         """
         Exception raised when a lookup for a specific user was not found.
+        """
+        pass
+
+    class UserExists(Exception):
+        """
+        Exception raised when trying to rename a user to a already existing user
         """
         pass
 
@@ -160,6 +167,10 @@ class RedisUsers:
         
         return prefixed_key
     
+    def _hash_password(self, plain_password):
+        hashed_password = bcrypt.hashpw(plain_password.encode(), bcrypt.gensalt())
+        return hashed_password.decode('utf-8')
+    
     def login(self, username, plain_password):
         key = self._prefixed_key(username)
         password = self.client.get(key)
@@ -178,12 +189,30 @@ class RedisUsers:
         keys = self.client.keys(lookup_pattern)
         return [key[len(lookup_pattern) - len(pattern):] for key in keys]
     
+    def exists(self, username):
+        key = self._prefixed_key(username)
+        return self.client.exists(key)
+    
     def insert(self, username, plain_password):
-        hashed_password = bcrypt.hashpw(plain_password.encode(), bcrypt.gensalt())
-        password = hashed_password.decode('utf-8')
-
+        password = self._hash_password(plain_password)
         key = self._prefixed_key(username)
         self.client.set(key, password)
+    
+    def update(self, old_username, new_username, plain_password=None):
+        old_key = self._prefixed_key(old_username)
+        new_key = self._prefixed_key(new_username)
+
+        if old_username != new_username and self.client.exists(new_key):
+            raise RedisUsers.UserExists(new_username)
+
+        pipe = self.client.pipeline()
+
+        if plain_password:
+            password = self._hash_password(plain_password)
+            pipe.set(old_key, password)
+
+        pipe.rename(old_key, new_key)
+        pipe.execute()
 
     def delete(self, username):
         key = self._prefixed_key(username)

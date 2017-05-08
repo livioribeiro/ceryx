@@ -12,6 +12,14 @@ class User(flask_login.UserMixin):
 
     def get_id(self):
         return self.username
+    
+    def update(self, new_username, new_password):
+        if new_password:
+            users.update(self.username, new_username, new_password)
+        else:
+            users.update(self.username, new_username)
+        
+        self.username = new_username
 
     @staticmethod
     def login(username, password):
@@ -19,26 +27,21 @@ class User(flask_login.UserMixin):
 
     @staticmethod
     def get(username):
-        u = users.lookup(username)
-        if not u:
+        if not users.exists(username):
             return None
 
-        return User(u[0])
+        return User(username)
 
     @staticmethod
     def all():
         for user in users.lookup():
             yield User(user)
-    
+
     @staticmethod
     def insert(username, plain_password):
         users.insert(username, plain_password)
         return User(username)
-    
-    @staticmethod
-    def update(username, new_password):
-        return User.insert(username, new_password)
-    
+
     @staticmethod
     def delete(username):
         users.delete(username)

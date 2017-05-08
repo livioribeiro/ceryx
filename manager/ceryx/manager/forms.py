@@ -47,8 +47,9 @@ class UserAddForm(FlaskForm):
 
 
 class UserEditForm(FlaskForm):
+    username = wtf.StringField('Username', [val.InputRequired()])
     password = wtf.PasswordField('New Password', [
-        val.InputRequired(),
+        val.Optional(),
         val.EqualTo('confirm', message='Password and Confirmation must match'),
     ])
-    confirm = wtf.PasswordField('Confirm Password', [val.InputRequired()])
+    confirm = wtf.PasswordField('Confirm Password', [val.Optional()])

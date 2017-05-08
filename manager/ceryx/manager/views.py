@@ -98,14 +98,18 @@ def edit_route(source):
 
     if form.validate_on_submit():
         try:
-            route.update(form.source.data, form.target.data, form.port.data)
-            if source == route.source:
-                flash(f'Route "{source}" updated', 'success')
+            new_source = form.source.data
+            new_target = form.target.data
+            new_port = form.port.data
+            route.update(new_source, new_target, new_port)
+
+            if source != new_source:
+                flash(f'Route "{source}" updated to "{new_source}"', 'success')
             else:
-                flash(f'Route "{source}" updated into {route.source}', 'success')
+                flash(f'Route "{source}" updated', 'success')
+
             return redirect(url_for('list_routes'))
         except Exception as e:
-            raise e
             app.logger.error(e)
             flash(f'Failed to update route "{old_source}"')
 
@@ -150,15 +154,22 @@ def new_user():
 @app.route('/users/<username>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_user(username):
-    if not User.get(username):
+    user = User.get(username)
+    if not user:
         abort(404)
 
-    form = UserEditForm()
+    form = UserEditForm(obj=user)
 
     if form.validate_on_submit():
-        password = form.password.data
-        User.update(username, password)
-        flash(f'User "{username}" updated', 'success')
+        new_username = form.username.data
+        new_password = form.password.data
+        user.update(new_username, new_password)
+
+        if new_username != username:
+            flash(f'User "{username}" updated to "{new_username}"', 'success')
+        else:
+            flash(f'User "{username}" updated', 'success')
+
         return redirect(url_for('list_users'))
 
     return render_template('users/edit.html', form=form)
@@ -171,6 +182,6 @@ def delete_user(username):
         return abort(404)
 
     User.delete(username)
-    flash(f'User "{namename}" deleted', 'success')
+    flash(f'User "{username}" deleted', 'success')
 
     return redirect(url_for('list_users'))
